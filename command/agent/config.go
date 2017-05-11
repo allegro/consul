@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/consul/types"
 	"github.com/hashicorp/consul/watch"
 	"github.com/mitchellh/mapstructure"
+	"golang.org/x/time/rate"
 )
 
 // Ports is used to simplify the configuration by
@@ -674,6 +675,14 @@ type Config struct {
 	// Minimum Session TTL
 	SessionTTLMin    time.Duration `mapstructure:"-"`
 	SessionTTLMinRaw string        `mapstructure:"session_ttl_min"`
+
+	// Rate limiter controls how frequently rpc calls are allowed to happen.
+	// In any large enough time interval, rate limiter limits the rate to RPCRate tokens per second,
+	// with a maximum burst size of RPCMaxBurst events.
+	// As a special case, if RPCRate == Inf (the infinite rate), RPCMaxBurst is ignored.
+	// See https://en.wikipedia.org/wiki/Token_bucket for more about token buckets.
+	RPCRate     rate.Limit `mapstructure:"rpc_rate"`
+	RPCMaxBurst int        `mapstructure:"rpc_max_burst"`
 }
 
 // Bool is used to initialize bool pointers in struct literals.
@@ -774,6 +783,9 @@ func DefaultConfig() *Config {
 		ACLEnforceVersion8: Bool(false),
 		RetryInterval:      30 * time.Second,
 		RetryIntervalWan:   30 * time.Second,
+
+		RPCRate:     rate.Inf,
+		RPCMaxBurst: 1000,
 
 		TLSMinVersion: "tls10",
 	}
@@ -1631,6 +1643,16 @@ func MergeConfig(a, b *Config) *Config {
 		result.SessionTTLMin = b.SessionTTLMin
 		result.SessionTTLMinRaw = b.SessionTTLMinRaw
 	}
+
+	// Rate limiting for RPC calls
+	if b.RPCRate > 0 {
+		result.RPCRate = b.RPCRate
+	}
+
+	if b.RPCMaxBurst > 0 {
+		result.RPCMaxBurst = b.RPCMaxBurst
+	}
+
 	if len(b.HTTPAPIResponseHeaders) != 0 {
 		if result.HTTPAPIResponseHeaders == nil {
 			result.HTTPAPIResponseHeaders = make(map[string]string)
