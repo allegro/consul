@@ -167,6 +167,21 @@ func TestDecodeConfig(t *testing.T) {
 		t.Fatalf("bad: %#v", config)
 	}
 
+	// RPC rate limiting
+	input = `{"rpc_rate": 100, "rpc_max_burst": 50}`
+	config, err = DecodeConfig(bytes.NewReader([]byte(input)))
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if config.RPCRate != 100 {
+		t.Fatalf("bad: %#v", config)
+	}
+
+	if config.RPCMaxBurst != 50 {
+		t.Fatalf("bad: %#v", config)
+	}
+
 	// Serf configs
 	input = `{"ports": {"serf_lan": 1000, "serf_wan": 2000}}`
 	config, err = DecodeConfig(bytes.NewReader([]byte(input)))

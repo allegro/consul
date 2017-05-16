@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/consul/lib"
 	"github.com/hashicorp/serf/coordinate"
 	"github.com/hashicorp/serf/serf"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -78,6 +79,8 @@ type Client struct {
 	shutdown     bool
 	shutdownCh   chan struct{}
 	shutdownLock sync.Mutex
+
+	rpcLimiter *rate.Limiter
 }
 
 // NewClient is used to construct a new Consul client from the
@@ -119,6 +122,7 @@ func NewClient(config *Config) (*Client, error) {
 		eventCh:    make(chan serf.Event, serfEventBacklog),
 		logger:     logger,
 		shutdownCh: make(chan struct{}),
+		rpcLimiter: rate.NewLimiter(config.RPCRate, config.RPCMaxBurst),
 	}
 
 	// Start lan event handlers before lan Serf setup to prevent deadlock
@@ -328,6 +332,11 @@ func (c *Client) RPC(method string, args interface{}, reply interface{}) error {
 	server := c.servers.FindServer()
 	if server == nil {
 		return structs.ErrNoServers
+	}
+
+	// Check rate
+	if !c.rpcLimiter.Allow() {
+		return structs.ErrRPCRateExceeded
 	}
 
 	// Forward to remote Consul

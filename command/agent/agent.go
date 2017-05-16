@@ -413,6 +413,15 @@ func (a *Agent) consulConfig() *consul.Config {
 		base.SessionTTLMin = a.config.SessionTTLMin
 	}
 
+	// Rate limiting for RPC calls
+	if a.config.RPCRate > 0 {
+		base.RPCRate = a.config.RPCRate
+	}
+
+	if a.config.RPCMaxBurst > 0 {
+		base.RPCMaxBurst = a.config.RPCMaxBurst
+	}
+
 	// Format the build string
 	revision := a.config.Revision
 	if len(revision) > 8 {
