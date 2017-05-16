@@ -1,3 +1,7 @@
+## 0.7.5-allegro1 (May 16, 2017)
+
+* agent: Added rate limiting for rpc calls
+
 ## 0.7.5 (February 15, 2017)
 
 BUG FIXES:
