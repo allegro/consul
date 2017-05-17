@@ -78,6 +78,8 @@ type Client struct {
 	shutdown     bool
 	shutdownCh   chan struct{}
 	shutdownLock sync.Mutex
+
+	rpcCallChan chan bool
 }
 
 // NewClient is used to construct a new Consul client from the
@@ -119,6 +121,7 @@ func NewClient(config *Config) (*Client, error) {
 		eventCh:    make(chan serf.Event, serfEventBacklog),
 		logger:     logger,
 		shutdownCh: make(chan struct{}),
+		rpcCallChan: make(chan bool),
 	}
 
 	// Start lan event handlers before lan Serf setup to prevent deadlock
@@ -136,7 +139,25 @@ func NewClient(config *Config) (*Client, error) {
 	c.servers = servers.New(c.logger, c.shutdownCh, c.serf, c.connPool)
 	go c.servers.Start()
 
+	go c.logRPCRate()
+
 	return c, nil
+}
+
+func (c *Client) logRPCRate() {
+	ticker := time.NewTicker(1 * time.Second)
+	counter := 0
+	for {
+		select {
+			case <- ticker.C:
+				if counter > 0 {
+					c.logger.Printf("[INFO] consul: rpc rate = %v", counter)
+					counter = 0
+				}
+			case <- c.rpcCallChan:
+				counter++
+		}
+	}
 }
 
 // setupSerf is used to setup and initialize a Serf
@@ -329,6 +350,8 @@ func (c *Client) RPC(method string, args interface{}, reply interface{}) error {
 	if server == nil {
 		return structs.ErrNoServers
 	}
+
+	c.rpcCallChan <- true
 
 	// Forward to remote Consul
 	if err := c.connPool.RPC(c.config.Datacenter, server.Addr, server.Version, method, args, reply); err != nil {
