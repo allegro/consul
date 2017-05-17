@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/serf/coordinate"
 	"github.com/hashicorp/serf/serf"
 	"golang.org/x/time/rate"
+	"sync/atomic"
 )
 
 const (
@@ -80,7 +81,8 @@ type Client struct {
 	shutdownCh   chan struct{}
 	shutdownLock sync.Mutex
 
-	rpcLimiter *rate.Limiter
+	rpcLimiter      *rate.Limiter
+	rpcCallsCounter uint64
 }
 
 // NewClient is used to construct a new Consul client from the
@@ -140,7 +142,21 @@ func NewClient(config *Config) (*Client, error) {
 	c.servers = servers.New(c.logger, c.shutdownCh, c.serf, c.connPool)
 	go c.servers.Start()
 
+	if c.config.RPCRateLogging {
+		go c.logRPCRate()
+	}
+
 	return c, nil
+}
+
+func (c *Client) logRPCRate() {
+	ticker := time.NewTicker(1 * time.Second)
+	for range ticker.C {
+		counterValue := atomic.SwapUint64(&c.rpcCallsCounter, 0)
+		if counterValue > 0 {
+			c.logger.Printf("[INFO] consul: rpc rate = %v", counterValue)
+		}
+	}
 }
 
 // setupSerf is used to setup and initialize a Serf
@@ -332,6 +348,10 @@ func (c *Client) RPC(method string, args interface{}, reply interface{}) error {
 	server := c.servers.FindServer()
 	if server == nil {
 		return structs.ErrNoServers
+	}
+
+	if c.config.RPCRateLogging {
+		atomic.AddUint64(&c.rpcCallsCounter, 1)
 	}
 
 	// Check rate

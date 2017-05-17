@@ -681,8 +681,9 @@ type Config struct {
 	// with a maximum burst size of RPCMaxBurst events.
 	// As a special case, if RPCRate == Inf (the infinite rate), RPCMaxBurst is ignored.
 	// See https://en.wikipedia.org/wiki/Token_bucket for more about token buckets.
-	RPCRate     rate.Limit `mapstructure:"rpc_rate"`
-	RPCMaxBurst int        `mapstructure:"rpc_max_burst"`
+	RPCRate        rate.Limit `mapstructure:"rpc_rate"`
+	RPCMaxBurst    int        `mapstructure:"rpc_max_burst"`
+	RPCRateLogging bool       `mapstructure:"rpc_rate_logging"`
 }
 
 // Bool is used to initialize bool pointers in struct literals.
@@ -784,8 +785,9 @@ func DefaultConfig() *Config {
 		RetryInterval:      30 * time.Second,
 		RetryIntervalWan:   30 * time.Second,
 
-		RPCRate:     rate.Inf,
-		RPCMaxBurst: 1000,
+		RPCRate:        rate.Inf,
+		RPCMaxBurst:    1000,
+		RPCRateLogging: false,
 
 		TLSMinVersion: "tls10",
 	}
@@ -1651,6 +1653,10 @@ func MergeConfig(a, b *Config) *Config {
 
 	if b.RPCMaxBurst > 0 {
 		result.RPCMaxBurst = b.RPCMaxBurst
+	}
+
+	if b.RPCRateLogging {
+		result.RPCRateLogging = true
 	}
 
 	if len(b.HTTPAPIResponseHeaders) != 0 {

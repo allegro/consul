@@ -422,6 +422,10 @@ func (a *Agent) consulConfig() *consul.Config {
 		base.RPCMaxBurst = a.config.RPCMaxBurst
 	}
 
+	if a.config.RPCRateLogging {
+		base.RPCRateLogging = true
+	}
+
 	// Format the build string
 	revision := a.config.Revision
 	if len(revision) > 8 {
