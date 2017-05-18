@@ -281,8 +281,9 @@ type Config struct {
 	// with a maximum burst size of RPCMaxBurst events.
 	// As a special case, if RPCRate == Inf (the infinite rate), RPCMaxBurst is ignored.
 	// See https://en.wikipedia.org/wiki/Token_bucket for more about token buckets.
-	RPCRate     rate.Limit
-	RPCMaxBurst int
+	RPCRate        rate.Limit
+	RPCMaxBurst    int
+	RPCRateLogging bool
 }
 
 // CheckVersion is used to check if the ProtocolVersion is valid
@@ -354,8 +355,9 @@ func DefaultConfig() *Config {
 		// than enough when running in the high performance mode.
 		RPCHoldTimeout: 7 * time.Second,
 
-		RPCRate:     rate.Inf,
-		RPCMaxBurst: 1000,
+		RPCRate:        rate.Inf,
+		RPCMaxBurst:    1000,
+		RPCRateLogging: false,
 
 		TLSMinVersion: "tls10",
 	}
