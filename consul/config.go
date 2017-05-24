@@ -281,9 +281,14 @@ type Config struct {
 	// with a maximum burst size of RPCMaxBurst events.
 	// As a special case, if RPCRate == Inf (the infinite rate), RPCMaxBurst is ignored.
 	// See https://en.wikipedia.org/wiki/Token_bucket for more about token buckets.
-	RPCRate        rate.Limit
-	RPCMaxBurst    int
+	RPCRate     rate.Limit
+	RPCMaxBurst int
+
+	// RPCRateLogging turns on logging rpc rate every second
 	RPCRateLogging bool
+
+	// RPCRateLoggingThreshold controls minimum value of rpc rate that we are interested in logging
+	RPCRateLoggingThreshold int
 }
 
 // CheckVersion is used to check if the ProtocolVersion is valid
@@ -358,6 +363,7 @@ func DefaultConfig() *Config {
 		RPCRate:        rate.Inf,
 		RPCMaxBurst:    1000,
 		RPCRateLogging: false,
+		RPCRateLoggingThreshold: 0,
 
 		TLSMinVersion: "tls10",
 	}

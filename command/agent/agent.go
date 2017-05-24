@@ -426,6 +426,10 @@ func (a *Agent) consulConfig() *consul.Config {
 		base.RPCRateLogging = true
 	}
 
+	if a.config.RPCRateLoggingThreshold > 0 {
+		base.RPCRateLoggingThreshold = a.config.RPCRateLoggingThreshold
+	}
+
 	// Format the build string
 	revision := a.config.Revision
 	if len(revision) > 8 {

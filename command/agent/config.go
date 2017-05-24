@@ -683,7 +683,12 @@ type Config struct {
 	// See https://en.wikipedia.org/wiki/Token_bucket for more about token buckets.
 	RPCRate        rate.Limit `mapstructure:"rpc_rate"`
 	RPCMaxBurst    int        `mapstructure:"rpc_max_burst"`
+
+	// RPCRateLogging turns on logging rpc rate every second
 	RPCRateLogging bool       `mapstructure:"rpc_rate_logging"`
+
+	// RPCRateLoggingThreshold controls minimum value of rpc rate that we are interested in logging
+	RPCRateLoggingThreshold int `mapstructure:"rpc_rate_logging_threshold"`
 }
 
 // Bool is used to initialize bool pointers in struct literals.
@@ -788,6 +793,7 @@ func DefaultConfig() *Config {
 		RPCRate:        rate.Inf,
 		RPCMaxBurst:    1000,
 		RPCRateLogging: false,
+		RPCRateLoggingThreshold: 0,
 
 		TLSMinVersion: "tls10",
 	}
@@ -1657,6 +1663,10 @@ func MergeConfig(a, b *Config) *Config {
 
 	if b.RPCRateLogging {
 		result.RPCRateLogging = true
+	}
+
+	if b.RPCRateLoggingThreshold > 0 {
+		result.RPCRateLoggingThreshold = b.RPCRateLoggingThreshold
 	}
 
 	if len(b.HTTPAPIResponseHeaders) != 0 {
