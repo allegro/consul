@@ -168,7 +168,7 @@ func TestDecodeConfig(t *testing.T) {
 	}
 
 	// RPC rate limiting
-	input = `{"rpc_rate": 100, "rpc_max_burst": 50, "rpc_rate_logging": true}`
+	input = `{"rpc_rate": 100, "rpc_max_burst": 50, "rpc_rate_logging": true, "rpc_rate_logging_threshold": 100}`
 	config, err = DecodeConfig(bytes.NewReader([]byte(input)))
 	if err != nil {
 		t.Fatalf("err: %s", err)
@@ -183,6 +183,10 @@ func TestDecodeConfig(t *testing.T) {
 	}
 
 	if !config.RPCRateLogging {
+		t.Fatalf("bad: %#v", config)
+	}
+
+	if config.RPCRateLoggingThreshold != 100 {
 		t.Fatalf("bad: %#v", config)
 	}
 

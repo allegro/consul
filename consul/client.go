@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/serf/serf"
 	"golang.org/x/time/rate"
 	"sync/atomic"
+	"github.com/armon/go-metrics"
 )
 
 const (
@@ -143,17 +144,17 @@ func NewClient(config *Config) (*Client, error) {
 	go c.servers.Start()
 
 	if c.config.RPCRateLogging {
-		go c.logRPCRate()
+		go c.logRPCRate(uint64(c.config.RPCRateLoggingThreshold))
 	}
 
 	return c, nil
 }
 
-func (c *Client) logRPCRate() {
+func (c *Client) logRPCRate(threshold uint64) {
 	ticker := time.NewTicker(1 * time.Second)
 	for range ticker.C {
 		counterValue := atomic.SwapUint64(&c.rpcCallsCounter, 0)
-		if counterValue > 0 {
+		if counterValue >= threshold {
 			c.logger.Printf("[INFO] consul: rpc rate = %v", counterValue)
 		}
 	}
@@ -354,8 +355,11 @@ func (c *Client) RPC(method string, args interface{}, reply interface{}) error {
 		atomic.AddUint64(&c.rpcCallsCounter, 1)
 	}
 
+	metrics.IncrCounter([]string{"consul", "client", "rpc"}, 1)
+
 	// Check rate
 	if !c.rpcLimiter.Allow() {
+		metrics.IncrCounter([]string{"consul", "client", "rpc", "exceeded"}, 1)
 		return structs.ErrRPCRateExceeded
 	}
 
