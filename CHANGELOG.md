@@ -1,3 +1,12 @@
+## 0.7.5-allegro3 (May 26, 2017)
+
+* agent: rpc rate added to metrics
+* agent: added threshold for logging rpc rate
+
+## 0.7.5-allegro2 (May 18, 2017)
+
+* agent: rpc rate logging
+
 ## 0.7.5-allegro1 (May 16, 2017)
 
 * agent: Added rate limiting for rpc calls
