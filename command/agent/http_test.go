@@ -523,6 +523,7 @@ func TestParseWait_InvalidIndex(t *testing.T) {
 }
 
 func TestParseConsistency(t *testing.T) {
+	_, srv := makeHTTPServer(t)
 	resp := httptest.NewRecorder()
 	var b structs.QueryOptions
 
@@ -532,7 +533,7 @@ func TestParseConsistency(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	if d := parseConsistency(resp, req, &b); d {
+	if d := srv.parseConsistency(resp, req, &b); d {
 		t.Fatalf("unexpected done")
 	}
 
@@ -550,7 +551,7 @@ func TestParseConsistency(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	if d := parseConsistency(resp, req, &b); d {
+	if d := srv.parseConsistency(resp, req, &b); d {
 		t.Fatalf("unexpected done")
 	}
 
@@ -560,9 +561,28 @@ func TestParseConsistency(t *testing.T) {
 	if !b.RequireConsistent {
 		t.Fatalf("Bad: %v", b)
 	}
+
+	// check using stale by default for http
+	var query structs.QueryOptions
+	srv.agent.config.HTTPAPIStaleByDefault = true
+
+	req, err = http.NewRequest("GET",
+		"/v1/catalog/nodes", nil)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	if d := srv.parseConsistency(resp, req, &query); d {
+		t.Fatalf("unexpected done")
+	}
+
+	if !query.AllowStale {
+		t.Fatalf("Bad: %v", query)
+	}
 }
 
 func TestParseConsistency_Invalid(t *testing.T) {
+	_, srv := makeHTTPServer(t)
 	resp := httptest.NewRecorder()
 	var b structs.QueryOptions
 
@@ -572,7 +592,7 @@ func TestParseConsistency_Invalid(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	if d := parseConsistency(resp, req, &b); !d {
+	if d := srv.parseConsistency(resp, req, &b); !d {
 		t.Fatalf("expected done")
 	}
 

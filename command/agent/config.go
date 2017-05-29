@@ -607,6 +607,9 @@ type Config struct {
 	// HTTPAPIResponseHeaders are used to add HTTP header response fields to the HTTP API responses.
 	HTTPAPIResponseHeaders map[string]string `mapstructure:"http_api_response_headers"`
 
+	// HTTPAPIStaleByDefault is used to turn on stale consistency mode by default for HTTP API requests
+	HTTPAPIStaleByDefault bool `mapstructure:"http_api_stale_by_default"`
+
 	// AtlasInfrastructure is the name of the infrastructure we belong to. e.g. hashicorp/stage
 	AtlasInfrastructure string `mapstructure:"atlas_infrastructure"`
 
@@ -794,6 +797,8 @@ func DefaultConfig() *Config {
 		RPCMaxBurst:    1000,
 		RPCRateLogging: false,
 		RPCRateLoggingThreshold: 0,
+
+		HTTPAPIStaleByDefault: false,
 
 		TLSMinVersion: "tls10",
 	}
@@ -1667,6 +1672,10 @@ func MergeConfig(a, b *Config) *Config {
 
 	if b.RPCRateLoggingThreshold > 0 {
 		result.RPCRateLoggingThreshold = b.RPCRateLoggingThreshold
+	}
+
+	if b.HTTPAPIStaleByDefault {
+		result.HTTPAPIStaleByDefault = true
 	}
 
 	if len(b.HTTPAPIResponseHeaders) != 0 {
